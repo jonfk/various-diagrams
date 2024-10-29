@@ -1,0 +1,113 @@
+title: |md
+
+  # Overall Architecture with Focus on IAM Services
+
+| {near: top-center}
+
+users: Users {
+  shape: person
+
+  style.multiple: true
+}
+
+external_services: External Services {
+  shape: cloud
+
+  style.multiple: true
+}
+
+kubernetes_cluster: Kubernetes Cluster {
+  shape: rectangle
+
+  style.stroke: blue
+
+  style.stroke-width: 2
+
+  api_gateway: API Gateway (Ambassador) {
+    shape: rectangle
+  }
+
+  iam_services: IAM Services {
+    authz: AuthZ Service {
+      shape: rectangle
+    }
+
+    authn: AuthN Service {
+      shape: rectangle
+    }
+
+    authz_operator: AuthZ-Operator {
+      shape: rectangle
+    }
+  }
+
+  monolith: AppDirect Monolith {
+    shape: rectangle
+  }
+
+  frontend: Frontend Services
+
+  upstream_services: Upstream Services {
+    shape: rectangle
+
+    vendor_integrations: Vendor Integration Services
+
+    checkout: Checkout Service {
+      shape: rectangle
+    }
+
+    billing: Billing Service {
+      shape: rectangle
+    }
+
+    other_services: Other Services {
+      shape: rectangle
+
+      style.multiple: true
+    }
+  }
+
+  redis: Redis {
+    shape: cylinder
+  }
+
+  mysql: MySQL {
+    shape: cylinder
+  }
+
+  kafka: Kafka {
+    shape: queue
+  }
+}
+
+users -> kubernetes_cluster.frontend: Uses
+
+kubernetes_cluster.frontend -> kubernetes_cluster.api_gateway: External requests
+
+external_services -> kubernetes_cluster.api_gateway: API calls
+
+kubernetes_cluster.api_gateway -> kubernetes_cluster.iam_services.authz: Validate auth
+
+kubernetes_cluster.iam_services.authz -> kubernetes_cluster.api_gateway: Add signed JWT
+
+kubernetes_cluster.api_gateway -> kubernetes_cluster.upstream_services: Route requests
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.iam_services.authn: User auth
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.monolith: User/Company data
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.upstream_services: Service-to-service auth
+
+kubernetes_cluster.iam_services.authz_operator -> kubernetes_cluster.iam_services.authz: Configure auth
+
+kubernetes_cluster.iam_services.authz_operator <- kubernetes_cluster.upstream_services: Register clients
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.redis: Caching
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.mysql: Store data
+
+kubernetes_cluster.iam_services.authz <-> kubernetes_cluster.kafka: Messages
+
+kubernetes_cluster.monolith <-> kubernetes_cluster.mysql: Store data
+
+kubernetes_cluster.monolith <-> kubernetes_cluster.kafka: Messages

@@ -1,0 +1,29 @@
+title: |md
+
+  # OAuth 2.0 Authorization Code Flow
+
+| {near: top-center}
+
+shape: sequence_diagram
+
+user: User
+app: Application
+authz: AuthZ Service
+authn: AuthN Service
+api: Public API
+
+app -> authz: "GET /oauth2/authorize?client_id=app_id&redirect_uri=app_callback&response_type=code&scope=read_profile"
+authz -> user: "Redirect to login page"
+user -> authn: "POST /login\n{username, password}"
+authn -> authz: "User authenticated"
+authz -> user: "Display consent screen"
+user -> authz: "Grant permissions"
+authz -> app: "Redirect to app_callback?code=authorization_code"
+
+app -> authz: "POST /oauth2/token\n{grant_type: authorization_code, code: authorization_code, client_id: app_id, client_secret: app_secret, redirect_uri: app_callback}"
+authz -> app: "200 OK\n{access_token: abc, refresh_token: def, expires_in: 3600, token_type: Bearer}"
+
+app -> api: "GET /api/profile\nAuthorization: Bearer abc"
+api -> authz: "Validate token"
+authz -> api: "Token valid, scope: read_profile"
+api -> app: "200 OK\n{user_profile_data}"

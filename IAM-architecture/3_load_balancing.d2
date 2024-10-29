@@ -1,0 +1,124 @@
+
+direction: right
+
+title: |md
+
+  # Load Balancing & Scaling
+
+| {near: top-center}
+
+external_requests: External Requests {
+  shape: cloud
+}
+
+kubernetes_cluster: Kubernetes Cluster {
+  shape: rectangle
+
+  style.stroke: blue
+
+  style.stroke-width: 2
+
+  ingress: NGINX Ingress Controller {
+    shape: rectangle
+
+    style.fill: lightblue
+  }
+
+  api_gateway: API Gateway {
+    shape: hexagon
+
+    label: "API Gateway\n(Ambassador)"
+  }
+
+  kube_proxy_1: kube-proxy {
+    shape: circle
+
+    style.fill: lightyellow
+  }
+
+  authz_instances: AuthZ Instances {
+    authz_1: AuthZ 1 {
+      shape: rectangle
+    }
+
+    authz_2: AuthZ 2 {
+      shape: rectangle
+    }
+
+    authz_3: AuthZ 3 {
+      shape: rectangle
+    }
+  }
+
+  kube_proxy_2: kube-proxy {
+    shape: circle
+
+    style.fill: lightyellow
+  }
+
+  upstream_services: Upstream Services {
+    shape: rectangle
+
+    style.multiple: true
+  }
+}
+
+external_requests -> kubernetes_cluster.ingress: Incoming requests
+
+kubernetes_cluster.ingress -> kubernetes_cluster.api_gateway: Route to Ambassador
+
+kubernetes_cluster.api_gateway -> kubernetes_cluster.kube_proxy_1: Requests to AuthZ service
+
+kubernetes_cluster.kube_proxy_1 -> kubernetes_cluster.authz_instances.authz_1: Load balance
+
+kubernetes_cluster.kube_proxy_1 -> kubernetes_cluster.authz_instances.authz_2: Load balance
+
+kubernetes_cluster.kube_proxy_1 -> kubernetes_cluster.authz_instances.authz_3: Load balance
+
+kubernetes_cluster.authz_instances.authz_1 -> kubernetes_cluster.kube_proxy_2: Authenticated requests
+
+kubernetes_cluster.authz_instances.authz_2 -> kubernetes_cluster.kube_proxy_2: Authenticated requests
+
+kubernetes_cluster.authz_instances.authz_3 -> kubernetes_cluster.kube_proxy_2: Authenticated requests
+
+kubernetes_cluster.kube_proxy_2 -> kubernetes_cluster.upstream_services: Load balance to pods
+
+ingress_lb_note: NGINX Ingress LB {
+  shape: text
+
+  style.font-size: 14
+
+  label: "NGINX Ingress Controller\nload balances incoming traffic"
+}
+
+ingress_lb_note -> kubernetes_cluster.ingress
+
+kube_proxy_1_lb_note: kube-proxy LB (1) {
+  shape: text
+
+  style.font-size: 14
+
+  label: "kube-proxy load balances\nrequests from Ambassador\nto AuthZ instances"
+}
+
+kube_proxy_1_lb_note -> kubernetes_cluster.kube_proxy_1
+
+kube_proxy_2_lb_note: kube-proxy LB (2) {
+  shape: text
+
+  style.font-size: 14
+
+  label: "kube-proxy load balances\nrequests to backend pods"
+}
+
+kube_proxy_2_lb_note -> kubernetes_cluster.kube_proxy_2
+
+scaling_note: Scaling {
+  shape: text
+
+  style.font-size: 14
+
+  label: "AuthZ instances can be\nscaled horizontally\nto handle increased load"
+}
+
+scaling_note -> kubernetes_cluster.authz_instances

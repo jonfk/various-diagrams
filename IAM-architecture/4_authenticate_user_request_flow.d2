@@ -1,0 +1,61 @@
+shape: sequence_diagram
+
+title: |md
+
+  # Authenticated User Request Flow
+
+| {near: top-center}
+
+user: User (Frontend)
+
+api_gateway: API Gateway
+
+authz: AuthZ Service
+
+service_a: Service A
+
+service_b: Service B
+
+fetch JWT public key: {
+  service_a -> authz: Fetch JWT public key
+
+  authz -> service_a: public key
+
+  service_b -> authz: Fetch JWT public key
+
+  authz -> service_b: public key
+}
+
+user -> api_gateway: "GET /api/resource\nCookie: session_id=123"
+
+api_gateway -> authz: "POST /validate\n{session_id: 123}"
+
+validate_session: {
+  authz -> authz: "Validate session"
+
+  authz -> authz: "Generate JWT"
+}
+
+authz -> api_gateway: "200 OK\n{jwt: efg}"
+
+api_gateway -> service_a: "GET /api/resource\nAuthorization: Bearer efg"
+
+service_a_handle_request: {
+  service_a -> service_a: "Verify JWT signature"
+
+  service_a -> service_a: "Check permissions in JWT claims"
+}
+
+service_a -> service_b: "GET /api/related-resource\nAuthorization: Bearer efg"
+
+service_b_handle_request: {
+  service_b -> service_b: "Verify JWT signature"
+
+  service_b -> service_b: "Check permissions in JWT claims"
+}
+
+service_b -> service_a: "200 OK\n{related_resource_data}"
+
+service_a -> api_gateway: "200 OK\n{resource_data, related_resource_data}"
+
+api_gateway -> user: "200 OK\n{resource_data, related_resource_data}"

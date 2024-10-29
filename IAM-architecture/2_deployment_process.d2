@@ -1,0 +1,103 @@
+direction: right
+
+title: {
+  label: Blue-Green Deployment with ArgoCD and Kubernetes
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.underline: true
+}
+
+developer: Developer {
+  shape: person
+}
+
+git_repo: Git Repository {
+  shape: package
+  crd: Custom Resource Definition
+}
+
+argocd: ArgoCD {
+  shape: rectangle
+  style.stroke-width: 2
+}
+
+k8s_cluster: Kubernetes Cluster {
+  style.stroke-width: 2
+
+  blue_instance: Blue Instance {
+    shape: rectangle
+    style.fill: "#ADD8E6"
+  }
+
+  green_instance: Green Instance {
+    shape: rectangle
+    style.fill: "#90EE90"
+  }
+
+  smoke_test: Smoke Test {
+    shape: diamond
+  }
+
+  authz_operator: AuthZ-Operator {
+    shape: hexagon
+  }
+
+  authz_service: AuthZ Service
+
+  ingress: Ingress {
+    shape: circle
+  }
+}
+
+external_traffic: External Traffic {
+  shape: cloud
+}
+
+developer -> git_repo: 1. Push changes
+git_repo -> argocd: 2. Trigger deployment
+argocd -> git_repo.crd: 3. Apply CRD
+git_repo.crd -> k8s_cluster.authz_operator: 4. Configure AuthZ-Operator
+argocd -> k8s_cluster.green_instance: 5. Deploy new version
+k8s_cluster.authz_operator -> k8s_cluster.authz_service: 6. Update auth configuration
+k8s_cluster.authz_service -> k8s_cluster.green_instance: 7. Apply auth configuration
+k8s_cluster.green_instance -> k8s_cluster.smoke_test: 8. Run tests
+k8s_cluster.smoke_test -> k8s_cluster.green_instance: 9. If tests pass
+
+external_traffic -> k8s_cluster.ingress: 10. Route traffic
+k8s_cluster.ingress -> k8s_cluster.blue_instance: 11a. Initial: 100% traffic {
+  style.stroke-dash: 3
+}
+k8s_cluster.ingress -> k8s_cluster.green_instance: 11b. Initial: 0% traffic {
+  style.stroke-dash: 3
+}
+
+traffic_shift: Traffic Shift {
+  shape: text
+  label: "12. Gradually shift traffic"
+}
+
+k8s_cluster.ingress -> k8s_cluster.blue_instance: 13a. Final: 0% traffic {
+  style.stroke: "#FF0000"
+  style.opacity: 0.5
+}
+k8s_cluster.ingress -> k8s_cluster.green_instance: 13b. Final: 100% traffic {
+  style.stroke: "#00FF00"
+  style.opacity: 0.5
+}
+
+git_repo.crd: |md
+  ```yaml
+  apiVersion: authz.appdirect.com/v1
+  kind: AuthZConfig
+  metadata:
+    name: myapp-auth
+  spec:
+    appName: myapp
+    roles:
+      - name: admin
+        permissions: ["read", "write", "delete"]
+      - name: user
+        permissions: ["read"]
+  ```
+|
